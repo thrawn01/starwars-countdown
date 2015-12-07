@@ -1,0 +1,253 @@
+<head>
+<style>
+
+
+@font-face {
+  font-family: 'Droid Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Droid Sans'), local('DroidSans'), url(fonts/droid.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
+}
+
+@font-face {
+  font-family: 'Droid Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Droid Sans Bold'), local('DroidSans-Bold'), url(fonts/droid-bold.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
+}
+
+html {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+    text-align: center;
+    background: #000000;
+    padding: 0;
+    margin: 0;
+}
+
+h1 {
+    font-family: "Droid Sans", arial, verdana, sans-serif;
+    font-weight: 700;
+    color: #ff6;
+    margin: 20px 20px 20px 20px;
+}
+
+.clock-container {
+    top: 40px;
+    position: relative;
+    z-index: 5;
+    padding: 10px;
+    border-radius: 3px;
+    background: #000000;
+    display: inline-block;
+    padding-bottom: 40px;
+}
+
+.clock {
+    font-family: sans-serif;
+    color: #fff;
+    display: inline-block;
+    font-weight: 100;
+    text-align: center;
+    font-size: 30px;
+
+}
+
+.clock > div {
+    padding: 10px;
+    border-radius: 3px;
+    background: #525352;
+    display: inline-block;
+}
+
+.clock div > span {
+    padding: 15px;
+    border-radius: 3px;
+    background: #777877;
+    display: inline-block;
+}
+
+.smalltext {
+    padding-top: 5px;
+    font-size: 16px;
+}
+
+
+/* BSS */
+
+.bss-slides {
+  background: #000;
+  position: relative;
+  display: block;
+  margin: 0;
+}
+
+.bss-slides figure {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  margin: 0;
+}
+
+.bss-slides figure:first-child {
+  position: relative;
+}
+
+.bss-slides figure img {
+  opacity: 0;
+  -webkit-transition: opacity 1.2s;
+  transition: opacity 1.2s;
+  position: relative;
+}
+
+.bss-slides .bss-show {
+  z-index: 3;
+}
+
+.bss-slides .bss-show img {
+  opacity: 1;
+}
+</style>
+</head>
+
+<body >
+    <div id="slide-container" class="bss-slides">
+        <div class="clock-container">
+            <h1>THE FORCE AWAKENS COUNTDOWN</h1>
+            <div class="clock" id="clockdiv">
+              <div>
+                <span class="days"></span>
+                <div class="smalltext">Days</div>
+              </div>
+              <div>
+                <span class="hours"></span>
+                <div class="smalltext">Hours</div>
+              </div>
+              <div>
+                <span class="minutes"></span>
+                <div class="smalltext">Minutes</div>
+              </div>
+              <div>
+                <span class="seconds"></span>
+                <div class="smalltext">Seconds</div>
+              </div>
+            </div>
+        </div>
+		<!--<figure> <img src="images/tie-vs-falcon.jpg" height="100%" width="100%" /> </figure>-->
+      <figure> <img src="http://i.imgur.com/A8bjKAP.jpg" height="100%" width="100%" /> </figure>
+      <figure> <img src="http://www.wired.com/wp-content/uploads/2015/11/tie-fighters-formation.jpg" height="100%" width="100%" /> </figure>
+      <figure> <img src="http://cdn-static.denofgeek.com/sites/denofgeek/files/styles/gallery_adv/public/2015/10/force_awakens_8.jpg" height="100%" width="100%" /> </figure>
+      <figure> <img src="http://i.imgur.com/vIMZniF.png" height="100%" width="100%" /> </figure>
+      <figure> <img src="https://cdn0.vox-cdn.com/uploads/chorus_asset/file/4179304/force_awakens_star_destroyer.0.jpg" height="100%" width="100%" /> </figure>
+      <figure> <img src="http://i.imgur.com/7R7FB1Q.jpg" height="100%" width="100%" /> </figure>
+      <figure> <img src="http://images-cdn.moviepilot.com/images/c_fill,h_1716,w_4096/t_mp_quality/scjvp094fdab05jrzdye/han-solo-chewbacca-and-the-millennium-falcon-return-for-the-star-wars-vii-trailer-362283.jpg" height="100%" width="100%" /> </figure>
+      <figure> <img src="http://source.superherostuff.com/wp-content/uploads/2015/11/Screen-Shot-2015-11-13-at-12.32.53-PM.png" height="100%" width="100%" /> </figure>
+      <figure> <img src="http://screencrush.com/442/files/2015/10/star-wars-posters-pic.jpg" height="100%" width="100%" /> </figure>
+      <figure> <img src="http://static.independent.co.uk/s3fs-public/thumbnails/image/2014/11/28/15/star-wars-trailer2.jpg" height="100%" width="100%" /> </figure>
+      <figure> <img src="http://screenrant.com/wp-content/uploads/star-wars-7-force-awakens-x-wing-stormtrooper.jpg" height="100%" width="100%" /> </figure>
+      <figure> <img src="http://i.imgur.com/YzNPZH8.jpg" height="100%" width="100%" /> </figure>
+    </div>
+
+
+</body>
+
+<script type="text/javascript">
+function getTimeRemaining(endtime){
+  var t = Date.parse(endtime) - Date.parse(new Date());
+  var seconds = Math.floor( (t/1000) % 60 );
+  var minutes = Math.floor( (t/1000/60) % 60 );
+  var hours = Math.floor( (t/(1000*60*60)) % 24 );
+  var days = Math.floor( t/(1000*60*60*24) );
+  return {
+    'total': t,
+    'days': days,
+    'hours': hours,
+    'minutes': minutes,
+    'seconds': seconds
+  };
+}
+
+function initializeClock(id, endtime){
+  var clock = document.getElementById(id);
+  var daysSpan = clock.querySelector('.days');
+  var hoursSpan = clock.querySelector('.hours');
+  var minutesSpan = clock.querySelector('.minutes');
+  var secondsSpan = clock.querySelector('.seconds');
+
+  function updateClock(){
+    var t = getTimeRemaining(endtime);
+
+    daysSpan.innerHTML = t.days;
+    hoursSpan.innerHTML = ('0' + t.hours).slice(-2);
+    minutesSpan.innerHTML = ('0' + t.minutes).slice(-2);
+    secondsSpan.innerHTML = ('0' + t.seconds).slice(-2);
+
+    if(t.total<=0){
+      clearInterval(timeinterval);
+    }
+  }
+
+  updateClock();
+  var timeinterval = setInterval(updateClock,1000);
+}
+
+var deadline = 'December 17 2015 19:00:00 UTC-0600';
+initializeClock('clockdiv', deadline);
+
+
+var makeBSS = function(el, options) {
+  var $slideshows = document.querySelectorAll(el), // a collection of all of the slideshow
+    $slideshow = {},
+    Slideshow = {
+      init: function(el, options) {
+        this.counter = 0; // to keep track of current slide
+        this.el = el; // current slideshow container    
+        this.$items = el.querySelectorAll('figure'); // a collection of all of the slides, caching for performance
+        this.numItems = this.$items.length; // total number of slides 
+        this.opts = options;
+        this.$items[0].classList.add('bss-show'); // add show class to first figure 
+        this.autoCycle(this.el, this.opts.speed, this.opts.pauseOnHover);
+      },
+      showCurrent: function(i) {
+        // increment or decrement this.counter depending on whether i === 1 or i === -1
+        if (i > 0) {
+          this.counter = (this.counter + 1 === this.numItems) ? 0 : this.counter + 1;
+        } else {
+          this.counter = (this.counter - 1 < 0) ? this.numItems - 1 : this.counter - 1;
+        } 
+
+        // remove .show from whichever element currently has it 
+        // http://stackoverflow.com/a/16053538/2006057
+        [].forEach.call(this.$items, function(el) {
+          el.classList.remove('bss-show');
+        });
+
+        // add .show to the one item that's supposed to have it
+        this.$items[this.counter].classList.add('bss-show');
+      },
+      autoCycle: function(el, speed, pauseOnHover) {
+        var that = this,
+          interval = window.setInterval(function() {
+            that.showCurrent(1); // increment & show
+          }, speed);
+      },
+    }; // end Slideshow object 
+
+  // make instances of Slideshow as needed
+  [].forEach.call($slideshows, function(el) {
+    $slideshow = Object.create(Slideshow);
+    $slideshow.init(el, options);
+  });
+};
+var opts = {
+  speed: 9000
+};
+makeBSS('#slide-container', opts);
+
+
+</script>
