@@ -1,27 +1,40 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
 	log "github.com/Sirupsen/logrus"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
+	"html/template"
 	"io"
+	"io/ioutil"
 	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
 	"starwars-countdown/middleware"
+	"strings"
 )
 
 var opts struct {
-	Bind     string `short:"b" long:"bind" env:"SWCD_BIND_ADDR" default:"localhost:8080"`
-	ImageDir string `short:"i" long:"image-dir" env:"SWCD_IMAGE_DIR" default:"images/"`
-	Debug    bool   `short:"d" long:"debug"`
+	Bind      string `short:"b" long:"bind" env:"SWCD_BIND_ADDR" default:"localhost:8080"`
+	ImageDir  string `short:"i" long:"image-dir" env:"SWCD_IMAGE_DIR" default:"public/images/"`
+	PublicDir string `short:"p" long:"public-dir" env:"SWCD_PUBLIC_DIR" default:"public"`
+	Debug     bool   `short:"d" long:"debug"`
+}
+
+type ImageContent struct {
+	Uri     string
+	IsLocal bool
+}
+
+type TemplateContent struct {
+	Images []ImageContent
 }
 
 type CountDown struct {
-	ImageDir string
+	CachedIndexPage bytes.Buffer
 }
 
 func main() {
@@ -34,11 +47,50 @@ func main() {
 		log.Printf("Debug Enabled")
 		log.SetLevel(log.DebugLevel)
 	}
-	countDown := &CountDown{opts.ImageDir}
+
+	// Collect a list of images to slide show
+	files, err := ioutil.ReadDir(opts.ImageDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Decide what images are links and what images are local
+	imageContents := make([]ImageContent, 0)
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".lnk") {
+			uri, err := ioutil.ReadFile(filepath.Join(opts.ImageDir, file.Name()))
+			if err != nil {
+				log.Fatal(err)
+			}
+			urlEndpoint := strings.Trim(string(uri), "\n")
+			log.Debug("lnk file: ", file.Name())
+			imageContents = append(imageContents, ImageContent{string(urlEndpoint), false})
+		} else {
+			log.Debug("image file: ", file.Name())
+			// Assume the file is an image
+			imageContents = append(imageContents, ImageContent{file.Name(), true})
+		}
+	}
+
+	// Pre-render and cache the index.html file
+	indexFile, err := ioutil.ReadFile(filepath.Join(opts.PublicDir, "index.html"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	renderer := template.New("Index template")
+	renderer, err = renderer.Parse(string(indexFile))
+	if err != nil {
+		log.Error(err)
+	}
+	templateContent := &TemplateContent{imageContents}
+	var parsedIndexPage bytes.Buffer
+	renderer.Execute(&parsedIndexPage, templateContent)
+
+	countDown := &CountDown{parsedIndexPage}
 
 	// Add our routes
 	router := httprouter.New()
-	//router.GET("/", countDown.Index)
 	router.GET("/*path", countDown.ServeFiles)
 
 	// Add our middleware chain
@@ -66,7 +118,7 @@ func (countDown *CountDown) ServeFiles(resp http.ResponseWriter, req *http.Reque
 	}
 
 	// TODO: Path to files should be configurable
-	path := fmt.Sprintf("public%s", params.ByName("path"))
+	path := filepath.Join("public", params.ByName("path"))
 
 	// Determine our content type by file extension
 	ctype := mime.TypeByExtension(filepath.Ext(path))
@@ -75,6 +127,12 @@ func (countDown *CountDown) ServeFiles(resp http.ResponseWriter, req *http.Reque
 		resp.Header().Set("Content-Type", "text/html")
 	} else {
 		resp.Header().Set("Content-Type", ctype)
+	}
+
+	// If this is the index file parse the file
+	if req.URL.Path == "/index.html" {
+		io.Copy(resp, &countDown.CachedIndexPage)
+		countDown.CachedIndexPage.Reset()
 	}
 
 	// Open the requested file
@@ -86,7 +144,7 @@ func (countDown *CountDown) ServeFiles(resp http.ResponseWriter, req *http.Reque
 		if os.IsPermission(err) {
 			http.Error(resp, "403 forbidden", http.StatusForbidden)
 		}
-		http.Error(resp, "500 Internal Server Error", http.StatusForbidden)
+		http.Error(resp, "500 Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 	defer fd.Close()
