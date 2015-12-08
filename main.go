@@ -18,10 +18,11 @@ import (
 )
 
 var opts struct {
-	Bind      string `short:"b" long:"bind" env:"SWCD_BIND_ADDR" default:"localhost:8080"`
-	ImageDir  string `short:"i" long:"image-dir" env:"SWCD_IMAGE_DIR" default:"public/images/"`
-	PublicDir string `short:"p" long:"public-dir" env:"SWCD_PUBLIC_DIR" default:"public"`
-	Debug     bool   `short:"d" long:"debug"`
+	Bind        string `short:"b" long:"bind" env:"SWCD_BIND_ADDR" default:"localhost:8080"`
+	ImageDir    string `short:"i" long:"image-dir" env:"SWCD_IMAGE_DIR" description:"Location of the images within the public-dir"  default:"images/"`
+	PublicDir   string `short:"p" long:"public-dir" env:"SWCD_PUBLIC_DIR" description:"The directory where index.html lives" default:"public/"`
+	OutputIndex bool   `short:"o" long:"output-index" description:"Print index.html to stdout and exit"`
+	Debug       bool   `short:"d" long:"debug"`
 }
 
 type ImageContent struct {
@@ -34,22 +35,23 @@ type TemplateContent struct {
 }
 
 type CountDown struct {
-	CachedIndexPage bytes.Buffer
+	CachedIndexPage *bytes.Buffer
 }
 
 func main() {
 	_, err := flags.Parse(&opts)
 	if err != nil {
-		log.Panic(err)
+		os.Exit(-1)
 	}
 
 	if opts.Debug {
-		log.Printf("Debug Enabled")
+		log.Printf("Debug enabled")
 		log.SetLevel(log.DebugLevel)
 	}
 
 	// Collect a list of images to slide show
-	files, err := ioutil.ReadDir(opts.ImageDir)
+	pathToImageDir := filepath.Join(opts.PublicDir, opts.ImageDir)
+	files, err := ioutil.ReadDir(pathToImageDir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,27 +59,33 @@ func main() {
 	// Decide what images are links and what images are local
 	imageContents := make([]ImageContent, 0)
 	for _, file := range files {
+		// If the file name ends in .lnk
 		if strings.HasSuffix(file.Name(), ".lnk") {
-			uri, err := ioutil.ReadFile(filepath.Join(opts.ImageDir, file.Name()))
+			// Read the file and retrieve the link to the image
+			pathToLinkFile := filepath.Join(pathToImageDir, file.Name())
+			uri, err := ioutil.ReadFile(pathToLinkFile)
 			if err != nil {
 				log.Fatal(err)
 			}
-			urlEndpoint := strings.Trim(string(uri), "\n")
-			log.Debug("lnk file: ", file.Name())
-			imageContents = append(imageContents, ImageContent{string(urlEndpoint), false})
+			// Add the url to our image list
+			url := strings.Trim(string(uri), "\n")
+			log.Debug("Found lnk: ", url)
+			imageContents = append(imageContents, ImageContent{string(url), false})
 		} else {
-			log.Debug("image file: ", file.Name())
-			// Assume the file is an image
-			imageContents = append(imageContents, ImageContent{file.Name(), true})
+			// Add a relative path to the image list
+			relativePathToImage := filepath.Join(opts.ImageDir, file.Name())
+			log.Debug("Found image: ", relativePathToImage)
+			imageContents = append(imageContents, ImageContent{relativePathToImage, true})
 		}
 	}
 
-	// Pre-render and cache the index.html file
+	// Read in index.html for caching
 	indexFile, err := ioutil.ReadFile(filepath.Join(opts.PublicDir, "index.html"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Render index.html
 	renderer := template.New("Index template")
 	renderer, err = renderer.Parse(string(indexFile))
 	if err != nil {
@@ -86,8 +94,13 @@ func main() {
 	templateContent := &TemplateContent{imageContents}
 	var parsedIndexPage bytes.Buffer
 	renderer.Execute(&parsedIndexPage, templateContent)
+	if opts.OutputIndex {
+		io.Copy(os.Stdout, &parsedIndexPage)
+		return
+	}
 
-	countDown := &CountDown{parsedIndexPage}
+	// Pass in our parsed Index Page to the shared struct
+	countDown := &CountDown{&parsedIndexPage}
 
 	// Add our routes
 	router := httprouter.New()
@@ -97,7 +110,7 @@ func main() {
 	chain := alice.New(middleware.NewRequestLogger(1000), middleware.Timeout).Then(router)
 
 	// Listen and serve requests
-	log.Printf("Listening for requests on %s", opts.Bind)
+	log.Info("Listening for requests on ", opts.Bind)
 	http.ListenAndServe(opts.Bind, chain)
 }
 
@@ -129,10 +142,11 @@ func (countDown *CountDown) ServeFiles(resp http.ResponseWriter, req *http.Reque
 		resp.Header().Set("Content-Type", ctype)
 	}
 
-	// If this is the index file parse the file
+	// If this is the index return the cached index page
 	if req.URL.Path == "/index.html" {
-		io.Copy(resp, &countDown.CachedIndexPage)
-		countDown.CachedIndexPage.Reset()
+		readable := bytes.NewReader(countDown.CachedIndexPage.Bytes())
+		io.Copy(resp, readable)
+		return
 	}
 
 	// Open the requested file
