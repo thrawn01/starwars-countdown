@@ -2,10 +2,6 @@ package main
 
 import (
 	"bytes"
-	log "github.com/Sirupsen/logrus"
-	flags "github.com/jessevdk/go-flags"
-	"github.com/julienschmidt/httprouter"
-	"github.com/justinas/alice"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -14,6 +10,10 @@ import (
 	"os"
 	"path/filepath"
 	"starwars-countdown/middleware"
+	log "starwars-countdown/vendor/_nuts/github.com/Sirupsen/logrus"
+	flags "starwars-countdown/vendor/_nuts/github.com/jessevdk/go-flags"
+	"starwars-countdown/vendor/_nuts/github.com/julienschmidt/httprouter"
+	"starwars-countdown/vendor/_nuts/github.com/justinas/alice"
 	"strings"
 )
 

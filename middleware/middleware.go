@@ -1,13 +1,13 @@
 package middleware
 
 import (
-	"github.com/justinas/alice"
-	"github.com/oxtoacart/bpool"
-	"gopkg.in/throttled/throttled.v2"
-	"gopkg.in/throttled/throttled.v2/store/memstore"
-	"log"
 	"net"
 	"net/http"
+	log "starwars-countdown/vendor/_nuts/github.com/Sirupsen/logrus"
+	"starwars-countdown/vendor/_nuts/github.com/justinas/alice"
+	"starwars-countdown/vendor/_nuts/github.com/oxtoacart/bpool"
+	"starwars-countdown/vendor/_nuts/gopkg.in/throttled/throttled.v2"
+	"starwars-countdown/vendor/_nuts/gopkg.in/throttled/throttled.v2/store/memstore"
 	"strconv"
 	"time"
 )
