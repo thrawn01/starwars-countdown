@@ -38,3 +38,11 @@ $ echo "http://i.imgur.com/YzNPZH8.jpg" > x-wing.lnk
 ```
 
 Now when the server starts it will put the [http://i.imgur.com/YzNPZH8.jpg](http://i.imgur.com/YzNPZH8.jpg) into the slide show.
+
+The images in the directory specified are sorted, so if you want a specific ordering, you can organize the files by alpha or numeric.
+```
+$ ls
+01-xwing.lnk
+02-chewie.lnk
+03-fin-pointing.lnk
+```
