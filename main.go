@@ -108,7 +108,7 @@ func main() {
 	// And init the server
 	server := countDown.NewServer()
 	// Add our middleware chain
-	chain := alice.New(middleware.NewRequestLogger(500), middleware.Timeout).Then(server)
+	chain := alice.New(middleware.NewRequestLogger(500), middleware.NewThrottle(), middleware.Timeout).Then(server)
 	// Listen and serve requests
 	log.Info("Listening for requests on ", opts.BindAddress)
 	err = http.ListenAndServe(opts.BindAddress, chain)
@@ -132,6 +132,8 @@ func (self *CountDown) Redirect(resp http.ResponseWriter, req *http.Request, new
 	resp.WriteHeader(http.StatusMovedPermanently)
 }
 
+// TODO: Replace some of this code with
+// http.Handle("/", http.FileServer(http.Dir("public")))
 func (self *CountDown) ServeFiles(resp http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	// Redirect requests for '/' to '/index.html'
 	if req.URL.Path == "/" {
