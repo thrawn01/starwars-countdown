@@ -36,7 +36,7 @@ type CountDown struct {
 
 func RenderIndexPage(publicDir string, imageDir string) bytes.Buffer {
 
-	// Collect a list of images to slide show
+	// Collect a list of images for slide show
 	pathToImageDir := filepath.Join(publicDir, imageDir)
 	files, err := ioutil.ReadDir(pathToImageDir)
 	if err != nil {
@@ -67,14 +67,14 @@ func RenderIndexPage(publicDir string, imageDir string) bytes.Buffer {
 	}
 
 	// Read in index.html for caching
-	indexFile, err := ioutil.ReadFile(filepath.Join(publicDir, "index.html"))
+	indexHtml, err := ioutil.ReadFile(filepath.Join(publicDir, "index.html"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Render index.html
 	renderer := template.New("Index template")
-	renderer, err = renderer.Parse(string(indexFile))
+	renderer, err = renderer.Parse(string(indexHtml))
 	if err != nil {
 		log.Error(err)
 	}
