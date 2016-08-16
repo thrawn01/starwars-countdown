@@ -1,1 +1,4 @@
 starwars-countdown
+.idea/
+vendor/
+glide.lock

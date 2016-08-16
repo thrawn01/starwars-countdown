@@ -9,21 +9,17 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"starwars-countdown/middleware"
-	log "starwars-countdown/vendor/_nuts/github.com/Sirupsen/logrus"
-	flags "starwars-countdown/vendor/_nuts/github.com/jessevdk/go-flags"
-	"starwars-countdown/vendor/_nuts/github.com/julienschmidt/httprouter"
-	"starwars-countdown/vendor/_nuts/github.com/justinas/alice"
 	"strings"
-)
 
-var opts struct {
-	BindAddress string `short:"b" long:"bind-address" env:"SWCD_BIND_ADDR" default:"localhost:8080"`
-	ImageDir    string `short:"i" long:"image-dir" env:"SWCD_IMAGE_DIR" description:"Location of the images within the public-dir"  default:"images/"`
-	PublicDir   string `short:"p" long:"public-dir" env:"SWCD_PUBLIC_DIR" description:"The directory where index.html lives" default:"public/"`
-	OutputIndex bool   `short:"o" long:"output-index" description:"Print index.html to stdout and exit"`
-	Debug       bool   `short:"d" long:"debug"`
-}
+	"os/signal"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/braintree/manners"
+	"github.com/julienschmidt/httprouter"
+	"github.com/justinas/alice"
+	"github.com/thrawn01/args"
+	"github.com/thrawn01/starwars-countdown/middleware"
+)
 
 type TemplateContent struct {
 	Images []string
@@ -40,7 +36,7 @@ func RenderIndexPage(publicDir string, imageDir string) bytes.Buffer {
 	pathToImageDir := filepath.Join(publicDir, imageDir)
 	files, err := ioutil.ReadDir(pathToImageDir)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	// Decide what images are links and what images are local
@@ -52,16 +48,16 @@ func RenderIndexPage(publicDir string, imageDir string) bytes.Buffer {
 			pathToLinkFile := filepath.Join(pathToImageDir, file.Name())
 			uri, err := ioutil.ReadFile(pathToLinkFile)
 			if err != nil {
-				log.Fatal(err)
+				logrus.Fatal(err)
 			}
 			// Add the url to our image list
 			url := strings.Trim(string(uri), "\n")
-			log.Debug("Found lnk: ", url)
+			logrus.Debug("Found lnk: ", url)
 			imageContents = append(imageContents, string(url))
 		} else {
 			// Add a relative path to the image list
 			relativePathToImage := filepath.Join(imageDir, file.Name())
-			log.Debug("Found image: ", relativePathToImage)
+			logrus.Debug("Found image: ", relativePathToImage)
 			imageContents = append(imageContents, relativePathToImage)
 		}
 	}
@@ -69,14 +65,14 @@ func RenderIndexPage(publicDir string, imageDir string) bytes.Buffer {
 	// Read in index.html for caching
 	indexHtml, err := ioutil.ReadFile(filepath.Join(publicDir, "index.html"))
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	// Render index.html
 	renderer := template.New("Index template")
 	renderer, err = renderer.Parse(string(indexHtml))
 	if err != nil {
-		log.Error(err)
+		logrus.Error(err)
 	}
 	templateContent := &TemplateContent{imageContents}
 	var parsedIndexPage bytes.Buffer
@@ -85,39 +81,65 @@ func RenderIndexPage(publicDir string, imageDir string) bytes.Buffer {
 }
 
 func main() {
-	_, err := flags.Parse(&opts)
-	if err != nil {
-		os.Exit(-1)
-	}
+	parser := args.NewParser(args.EnvPrefix("SWCD_"))
+	parser.AddOption("--bind").Env("BIND_ADDR").Default("localhost:8080").
+		Help("interface to listen on")
+	parser.AddOption("--image-dir").Env("IMAGE_DIR").Default("images/").
+		Help("Location of the images within the public-dir")
+	parser.AddOption("--public-dir").Env("PUBLIC_DIR").Default("public/").
+		Help("The directory where index.html lives")
+	parser.AddOption("--output-index").Alias("-o").IsTrue().
+		Help("Print index.html to stdout and exit")
+	parser.AddOption("--debug").Alias("-o").IsTrue().
+		Help("Print index.html to stdout and exit")
 
-	if opts.Debug {
-		log.Printf("Debug enabled")
-		log.SetLevel(log.DebugLevel)
+	opts := parser.ParseArgsSimple(nil)
+
+	if opts.Bool("debug") {
+		logrus.Printf("Debug enabled")
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	// Render the index.html page
-	indexPage := RenderIndexPage(opts.PublicDir, opts.ImageDir)
+	indexPage := RenderIndexPage(opts.String("public-dir"), opts.String("image-dir"))
 	// Do we output and exit?
-	if opts.OutputIndex {
+	if opts.Bool("output-index") {
 		io.Copy(os.Stdout, &indexPage)
 		return
 	}
 
 	// Create a new instance
-	countDown := &CountDown{indexPage, opts.PublicDir}
+	countDown := &CountDown{indexPage, opts.String("public-dir")}
 	// And init the server
-	server := countDown.NewServer()
+	router := countDown.NewRouter()
 	// Add our middleware chain
-	chain := alice.New(middleware.NewRequestLogger(500), middleware.NewThrottle(), middleware.Timeout).Then(server)
+	chain := alice.New(middleware.NewRequestLogger(500),
+		middleware.NewThrottle(),
+		middleware.Timeout).Then(router)
+
+	server := manners.NewWithServer(&http.Server{
+		Addr:    opts.String("bind"),
+		Handler: chain,
+	})
+
+	// Catch SIGINT Gracefully so we don't drop any active http requests
+	go func() {
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, os.Interrupt, os.Kill)
+		sig := <-signalChan
+		logrus.Infof("Captured %v. Exiting...", sig)
+		server.Close()
+	}()
+
 	// Listen and serve requests
-	log.Info("Listening for requests on ", opts.BindAddress)
-	err = http.ListenAndServe(opts.BindAddress, chain)
+	logrus.Info("Listening for requests on ", opts.String("bind"))
+	err := server.ListenAndServe()
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		logrus.Fatal("ListenAndServe: ", err)
 	}
 }
 
-func (self *CountDown) NewServer() http.Handler {
+func (self *CountDown) NewRouter() http.Handler {
 	// Add our routes
 	router := httprouter.New()
 	router.GET("/*path", self.ServeFiles)
@@ -137,7 +159,7 @@ func (self *CountDown) Redirect(resp http.ResponseWriter, req *http.Request, new
 func (self *CountDown) ServeFiles(resp http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	// Redirect requests for '/' to '/index.html'
 	if req.URL.Path == "/" {
-		log.Debug("Redirect to '/index.html'")
+		logrus.Debug("Redirect to '/index.html'")
 		self.Redirect(resp, req, "/index.html")
 		return
 	}
@@ -147,7 +169,7 @@ func (self *CountDown) ServeFiles(resp http.ResponseWriter, req *http.Request, p
 	// Determine our content type by file extension
 	ctype := mime.TypeByExtension(filepath.Ext(path))
 	if ctype == "" {
-		log.Debug("Unable to determine mime type for ", path)
+		logrus.Debug("Unable to determine mime type for ", path)
 		resp.Header().Set("Content-Type", "text/html")
 	} else {
 		resp.Header().Set("Content-Type", ctype)

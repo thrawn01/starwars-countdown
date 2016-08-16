@@ -3,19 +3,19 @@
 FROM golang
 
 # Copy the local package files to the container's workspace.
-ADD . /go/src/starwars-countdown
+ADD . /go/src/github.com/thrawn01/starwars-countdown
 
 # Set the public directory within the container end users can then docker mount
 # images, or rebuild the image with their own images
-ENV SWCD_PUBLIC_DIR=/go/src/starwars-countdown/public
-ENV SWCD_BIND_ADDR=0.0.0.0:8080
+ENV SWCD_PUBLIC_DIR=/go/src/github.com/thrawn01/starwars-countdown/public
+ENV SWCD_BIND_ADDR=0.0.0.0:80
 
 # Build the server inside the container.
-RUN go install starwars-countdown
+RUN go install github.com/thrawn01/starwars-countdown
 
 # Run the server
 ENTRYPOINT /go/bin/starwars-countdown
 
-# The service listens on port 8080.
-EXPOSE 8080
+# The service listens on port 80.
+EXPOSE 80
 

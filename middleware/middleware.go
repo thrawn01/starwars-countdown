@@ -3,13 +3,14 @@ package middleware
 import (
 	"net"
 	"net/http"
-	log "starwars-countdown/vendor/_nuts/github.com/Sirupsen/logrus"
-	"starwars-countdown/vendor/_nuts/github.com/justinas/alice"
-	"starwars-countdown/vendor/_nuts/github.com/oxtoacart/bpool"
-	"starwars-countdown/vendor/_nuts/gopkg.in/throttled/throttled.v2"
-	"starwars-countdown/vendor/_nuts/gopkg.in/throttled/throttled.v2/store/memstore"
 	"strconv"
 	"time"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/justinas/alice"
+	"github.com/oxtoacart/bpool"
+	"gopkg.in/throttled/throttled.v2"
+	"gopkg.in/throttled/throttled.v2/store/memstore"
 )
 
 func Timeout(handler http.Handler) http.Handler {
@@ -21,14 +22,14 @@ func NewThrottle() alice.Constructor {
 	// Optional redis memstore available for throttling across multiple servers
 	store, err := memstore.New(65536)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	// No more than 500 requests a minute with bursts of 50
 	quota := throttled.RateQuota{throttled.PerMin(500), 50}
 	rateLimiter, err := throttled.NewGCRARateLimiter(store, quota)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	httpRateLimiter := throttled.HTTPRateLimiter{
@@ -65,7 +66,7 @@ func (self *WrappedResponseWriter) WriteHeader(status int) {
 	self.resp.WriteHeader(status)
 }
 
-// Writes apache style access logs using an efficient buffer pool to avoid
+// Writes apache style access logruss using an efficient buffer pool to avoid
 // garbage collection
 type RequestLogger struct {
 	bufferPool *bpool.BufferPool
@@ -119,8 +120,8 @@ func (self *RequestLogger) Handler(handler http.Handler) http.Handler {
 		buf.WriteString(" ")
 		// Result Size
 		buf.WriteString(strconv.Itoa(resp.size))
-		// TODO: Write out the log entry in a buffered non blocking manner
-		log.Println(buf)
+		// TODO: Write out the logrus entry in a buffered non blocking manner
+		logrus.Println(buf)
 		// Put the buffer back into the pool
 		self.bufferPool.Put(buf)
 	})

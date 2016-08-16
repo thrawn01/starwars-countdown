@@ -1,0 +1,11 @@
+package: github.com/thrawn01/starwars-countdown
+import:
+- package: github.com/Sirupsen/logrus
+- package: github.com/julienschmidt/httprouter
+- package: github.com/justinas/alice
+- package: github.com/oxtoacart/bpool
+- package: github.com/thrawn01/args
+- package: gopkg.in/throttled/throttled.v2
+  subpackages:
+  - store/memstore
+- package: github.com/braintree/manners
