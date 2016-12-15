@@ -25,12 +25,12 @@ clean:
 build:
 	docker build -t ${DOCKER_REPO}/starwars-countdown:latest .
 
-run: build
+run:
 	@echo "Running Image on port 1313"
 	-docker rm starwars-countdown
 	docker run -p 1313:80 --name starwars-countdown ${DOCKER_REPO}/starwars-countdown:latest
 
-publish: build
+publish:
 	docker push ${DOCKER_REPO}/starwars-countdown:latest
 
 all: build

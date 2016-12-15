@@ -1,6 +1,6 @@
 # Start from a Debian image with the latest version of Go installed
 # and a workspace (GOPATH) configured at /go.
-FROM golang
+FROM golang:1.7
 
 # Copy the local package files to the container's workspace.
 ADD . /go/src/github.com/thrawn01/starwars-countdown
@@ -10,7 +10,10 @@ ADD . /go/src/github.com/thrawn01/starwars-countdown
 ENV SWCD_PUBLIC_DIR=/go/src/github.com/thrawn01/starwars-countdown/public
 ENV SWCD_BIND_ADDR=0.0.0.0:80
 
+WORKDIR /go/src/github.com/thrawn01/starwars-countdown
+
 # Build the server inside the container.
+RUN go get .
 RUN go install github.com/thrawn01/starwars-countdown
 
 # Run the server
